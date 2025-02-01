@@ -2,7 +2,7 @@ module github.com/plasticgaming99/integra
 
 go 1.23
 
-require github.com/mholt/archives v0.0.0-20241123153623-b85dd98f4298
+require github.com/mholt/archives v0.0.0-20241216060121-23e0af8fe73d
 
 require (
 	github.com/STARRY-S/zip v0.2.1 // indirect
