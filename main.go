@@ -62,7 +62,7 @@ func main() {
 	} else {
 		parse(os.Args[1:])
 	}
-	printdbg(sync, search, upgrade, allyes)
+	printdbg(install, sync, search, upgrade, allyes)
 	printdbg(pack2ins)
 	printdbg(rootdir)
 	printdbg(dbdir)
@@ -77,7 +77,7 @@ func main() {
 		printdbg(localtrdb[i][0][0])
 	}
 
-	for cnt := 1; cnt < len(pack2ins); cnt++ {
+	for cnt := 0; cnt < len(pack2ins); cnt++ {
 		if install {
 			var packagename string
 			var intgpack archives.Tar
@@ -192,6 +192,7 @@ func main() {
 
 				intgpack.Extract(context.Background(), tInput, getPackName)
 			}
+			printdbg("installing ", packagename)
 
 			intgpack.Extract(context.Background(), input, installArchive)
 			// err := intgpack.Extract(nil, nil, nil)
