@@ -127,7 +127,7 @@ func main() {
 				}
 
 				if f.LinkTarget != "" {
-					targAbs, err := filepath.Abs(filepath.Join(rootdir, f.LinkTarget))
+					targAbs := f.LinkTarget
 					printdbg("symlink target:", targAbs)
 					if err != nil {
 						printdbg(err)
