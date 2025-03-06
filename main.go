@@ -1,5 +1,9 @@
 // artex package manager
 // integra (much unstable such wow)
+// goal: full dependency-based parallel
+//   package management
+// now:
+//   just pkgtools
 
 package main
 
@@ -117,6 +121,25 @@ func main() {
 				return nil
 			}
 
+			{
+				fsys := archives.ArchiveFS{
+					Path:   pack2ins[cnt],
+					Format: archives.Tar{},
+				}
+				f, err := fsys.Open(".PACKAGE")
+				if err != nil {
+					log.Fatal(err)
+
+				}
+				read := bufio.NewReader(f)
+				scan := bufio.NewScanner(read)
+				for scan.Scan() {
+					if strings.HasPrefix(scan.Text(), "package") {
+						packagename = strings.Split(scan.Text(), " = ")[1]
+					}
+				}
+			}
+
 			installArchive := func(ctx context.Context, f archives.FileInfo) error {
 				printdbg(f.Name())
 				destpath := rootdir + f.NameInArchive
@@ -127,8 +150,8 @@ func main() {
 				}
 
 				if f.LinkTarget != "" {
-					targAbs := f.LinkTarget
-					printdbg("symlink target:", targAbs)
+					targ := cutdot(f.LinkTarget)
+					printdbg("symlink target:", targ)
 					if err != nil {
 						printdbg(err)
 						return err
@@ -138,7 +161,7 @@ func main() {
 						printdbg(err)
 						return err
 					}
-					err = os.Symlink(targAbs, nameinarchiveABS)
+					err = os.Symlink(targ, nameinarchiveABS)
 					printdbg(err)
 					return err
 				}
@@ -154,7 +177,7 @@ func main() {
 				if f.Name() == ".PACKAGE" || f.Name() == ".MTREE" {
 					destpath = filepath.Join(dbdir, "local", packagename, f.NameInArchive)
 					mdAllIfNeeded(filepath.Join(dbdir, "local", packagename))
-					dest, err := os.OpenFile(destpath, os.O_CREATE|os.O_WRONLY, f.Mode())
+					dest, err := os.OpenFile(destpath, os.O_CREATE|os.O_WRONLY, f.Mode().Perm())
 					if err != nil {
 						log.Fatal("error writing db")
 					}
@@ -201,26 +224,34 @@ func main() {
 		if remove {
 			printdbg("start remove")
 			var inttt int
+			var found bool
 			printdbg("toremove:", pack2ins[cnt])
-			for i := 0; i < len(pack2ins); i++ {
+			for i := 0; i < len(localtrdb); i++ {
+				printdbg(localtrdb[i][0][0], "==", pack2ins[cnt])
 				if localtrdb[i][0][0] == pack2ins[cnt] {
-					printdbg("yes")
+					printdbg("yes found in db")
 					inttt = i
+					found = true
+					break
 				}
 			}
+			if !found {
+				log.Fatal("package ", pack2ins[cnt], " not found in db")
+			}
 			printdbg("db id:", inttt)
-			for i := 2; i < len(localtrdb[inttt])-2; i++ {
+			for i := 1; i < len(localtrdb[inttt])-1; i++ {
 				path2remove := localtrdb[inttt][i][0]
 				path2remove, err := filepath.Abs(filepath.Join(rootdir, path2remove))
 				if err != nil {
 					log.Fatal("error during removing")
 				}
-				if !(strings.HasPrefix(path2remove, "/set") || strings.HasPrefix(path2remove, "./.PACKAGE")) {
+				if !(strings.HasPrefix(path2remove, filepath.Join(rootdir, "/set")) || strings.HasPrefix(path2remove, filepath.Join(rootdir, "./.PACKAGE"))) {
 					printdbg(path2remove)
 					os.Remove(path2remove)
 				}
 			}
-			os.RemoveAll(filepath.Join(dbdir, pack2ins[cnt]))
+			printdbg("delete db path", filepath.Join(dbdir, "local", pack2ins[cnt]))
+			os.RemoveAll(filepath.Join(dbdir, "local", pack2ins[cnt]))
 		}
 	}
 }
@@ -257,7 +288,7 @@ func parse(in []string) {
 					fmt.Println("errrrr")
 				}
 				rootdir = dir + "/"
-				dbdir, err = filepath.Abs(rootdir + dbdir)
+				dbdir, err = filepath.Abs(filepath.Join(rootdir, dbdir))
 				if err != nil {
 					fmt.Println("err")
 				}
@@ -403,4 +434,30 @@ func upperAvailable(st string) bool {
 		}
 	}
 	return false
+}
+
+func cutdot(in string) string {
+	if strings.HasPrefix(in, ".") {
+		return in[1:]
+	}
+	return in
+}
+
+type PackageV1 struct {
+	PackName string
+	Priority uint64
+}
+
+type PackagesV1 []PackageV1
+
+func (p PackagesV1) Len() int {
+	return len(p)
+}
+
+func (p PackagesV1) Swap(i, j int) {
+	p[i], p[j] = p[j], p[i]
+}
+
+func (p PackagesV1) Less(i, j int) bool {
+	return p[i].Priority < p[j].Priority
 }
