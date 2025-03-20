@@ -16,6 +16,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"slices"
 	"strconv"
 	"strings"
 	"unicode"
@@ -71,7 +72,7 @@ func main() {
 	printdbg(rootdir)
 	printdbg(dbdir)
 
-	_, localtrdb, err := readLocalDB(filepath.Join(dbdir, "local"))
+	localdb, localtrdb, err := readLocalDB(filepath.Join(dbdir, "local"))
 	if err != nil {
 		log.Fatal("failed to read db")
 	}
@@ -83,7 +84,7 @@ func main() {
 
 	for cnt := 0; cnt < len(pack2ins); cnt++ {
 		if install {
-			var packagename string
+			var pkinfo packinfo
 			var intgpack archives.Tar
 			abs, err := filepath.Abs(pack2ins[cnt])
 			if err != nil {
@@ -95,31 +96,6 @@ func main() {
 			}
 			defer in.Close()
 			input := bufio.NewReader(in)
-
-			getPackName := func(ctx context.Context, f archives.FileInfo) error {
-				if f.NameInArchive == ".PACKAGE" {
-					fssss, err := f.Open()
-					if err != nil {
-						return err
-					}
-					defer fssss.Close()
-					toreadbyte, err := io.ReadAll(fssss)
-					if err != nil {
-						return err
-					}
-					stringToOperate := string(toreadbyte)
-					slice2op := strings.Split(stringToOperate, "\n")
-					for i := 0; i < len(slice2op); i++ {
-						if s := strings.Split(slice2op[i], " = "); s[0] == "package" {
-							packagename = s[1]
-						}
-					}
-				}
-				if f.IsDir() {
-					return nil
-				}
-				return nil
-			}
 
 			{
 				fsys := archives.ArchiveFS{
@@ -135,8 +111,32 @@ func main() {
 				scan := bufio.NewScanner(read)
 				for scan.Scan() {
 					if strings.HasPrefix(scan.Text(), "package") {
-						packagename = strings.Split(scan.Text(), " = ")[1]
+						_, tx, b := strings.Cut(scan.Text(), " = ")
+						if b {
+							pkinfo.packagename = tx
+						}
+					} else if strings.HasPrefix(scan.Text(), "depends") {
+						_, tx, b := strings.Cut(scan.Text(), " = ")
+						if b {
+							pkinfo.depends = append(pkinfo.depends, tx)
+						}
+					} else if strings.HasPrefix(scan.Text(), "conflicts") {
+						_, tx, b := strings.Cut(scan.Text(), " = ")
+						if b {
+							pkinfo.conflicts = append(pkinfo.conflicts, tx)
+						}
 					}
+				}
+			}
+
+			fmt.Println("checking conflicts...")
+			for i := range localdb {
+				printdbg("checking", localdb[i].packagename)
+				if slices.Contains(localdb[i].conflicts, pkinfo.packagename) {
+					log.Fatal(pkinfo.packagename, " and ", localdb[i].packagename, " is conflicting")
+				}
+				if slices.Contains(pkinfo.conflicts, localdb[i].packagename) {
+					log.Fatal(pkinfo.packagename, " and ", localdb[i].packagename, " is conflicting")
 				}
 			}
 
@@ -175,8 +175,8 @@ func main() {
 				defer reader.Close()
 
 				if f.Name() == ".PACKAGE" || f.Name() == ".MTREE" {
-					destpath = filepath.Join(dbdir, "local", packagename, f.NameInArchive)
-					mdAllIfNeeded(filepath.Join(dbdir, "local", packagename))
+					destpath = filepath.Join(dbdir, "local", pkinfo.packagename, f.NameInArchive)
+					mdAllIfNeeded(filepath.Join(dbdir, "local", pkinfo.packagename))
 					dest, err := os.OpenFile(destpath, os.O_CREATE|os.O_WRONLY, f.Mode().Perm())
 					if err != nil {
 						log.Fatal("error writing db")
@@ -201,21 +201,7 @@ func main() {
 				return nil
 			}
 
-			{
-				abs, err := filepath.Abs(pack2ins[cnt])
-				if err != nil {
-					fmt.Println(err)
-				}
-				in, err := os.Open(abs)
-				if err != nil {
-					fmt.Println("Error opening archive file")
-				}
-				defer in.Close()
-				tInput := bufio.NewReader(in)
-
-				intgpack.Extract(context.Background(), tInput, getPackName)
-			}
-			printdbg("installing ", packagename)
+			printdbg("installing ", pkinfo.packagename)
 
 			intgpack.Extract(context.Background(), input, installArchive)
 			// err := intgpack.Extract(nil, nil, nil)
@@ -414,6 +400,10 @@ func printdbg(a ...any) {
 		fmt.Println(a...)
 	}
 }
+
+/*func preMergeCheck(fPath string, mList []string) (ok bool) {
+
+}*/
 
 func mdAllIfNeeded(path string) error {
 	info, err := os.Stat(path)
