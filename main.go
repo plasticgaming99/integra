@@ -180,7 +180,7 @@ func main() {
 				}
 
 				if f.LinkTarget != "" {
-					targ := cutdot(f.LinkTarget)
+					targ := f.LinkTarget
 					printdbg("symlink target:", targ)
 					if err != nil {
 						printdbg(err)
@@ -454,13 +454,6 @@ func upperAvailable(st string) bool {
 		}
 	}
 	return false
-}
-
-func cutdot(in string) string {
-	if strings.HasPrefix(in, ".") {
-		return in[1:]
-	}
-	return in
 }
 
 type PackageV1 struct {
