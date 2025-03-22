@@ -21,6 +21,7 @@ import (
 	"strings"
 	"unicode"
 
+	"github.com/BurntSushi/toml"
 	"github.com/mholt/archives"
 )
 
@@ -40,6 +41,7 @@ var (
 	pack2ins []string
 )
 
+// much basic packinfo
 type packinfo struct {
 	packagename  string
 	version      string
@@ -54,6 +56,20 @@ type packinfo struct {
 	conflicts    []string
 	provides     []string
 }
+
+// parse config with toml
+type (
+	configfile struct {
+		repo []repo
+	}
+	config struct {
+		parallel bool
+	}
+	repo struct {
+		server  string
+		include string
+	}
+)
 
 func main() {
 	fmt.Println("integra test")
@@ -77,9 +93,23 @@ func main() {
 		log.Fatal("failed to read db")
 	}
 
+	// debug?
 	printdbg("entries???:", len(localtrdb))
 	for i := 0; i < len(localtrdb); i++ {
 		printdbg(localtrdb[i][0][0])
+	}
+
+	// remote repo
+	configpath := filepath.Join(rootdir, "etc", "integra.conf")
+	var config configfile
+	_, err = toml.DecodeFile(configpath, &config)
+	if err != nil {
+		fmt.Println("error parsing config file")
+		os.Exit(1)
+	}
+
+	for _, s := range config.repo {
+		fmt.Println(s)
 	}
 
 	for cnt := 0; cnt < len(pack2ins); cnt++ {
