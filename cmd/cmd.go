@@ -73,7 +73,7 @@ func Exec(args []string) {
 	// debug?
 	p.Printdbg("entries???:", len(localtrdb))
 	for i := 0; i < len(localtrdb); i++ {
-		p.Printdbg(localtrdb[i][0][0])
+		p.Printdbg(localtrdb[i].Filepath)
 	}
 
 	// remote repo
@@ -104,8 +104,8 @@ func Exec(args []string) {
 			var found bool
 			p.Printdbg("toremove:", pack2ins[cnt])
 			for i := 0; i < len(localtrdb); i++ {
-				p.Printdbg(localtrdb[i][0][0], " == ", pack2ins[cnt])
-				if localtrdb[i][0][0] == pack2ins[cnt] {
+				p.Printdbg(localtrdb[i].ParentPkg, " == ", pack2ins[cnt])
+				if localtrdb[i].ParentPkg == pack2ins[cnt] {
 					p.Printdbg("yes found in db")
 					inttt = i
 					found = true
@@ -116,8 +116,8 @@ func Exec(args []string) {
 				log.Fatal("package ", pack2ins[cnt], " not found in db")
 			}
 			p.Printdbg("db id:", inttt)
-			for i := 1; i < len(localtrdb[inttt])-1; i++ {
-				path2remove := localtrdb[inttt][i][0]
+			for _, intg := range localtrdb {
+				path2remove := intg.Filepath
 				path2remove, err := filepath.Abs(filepath.Join(rootdir, path2remove))
 				if err != nil {
 					log.Fatal("error during removing")

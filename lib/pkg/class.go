@@ -1,5 +1,7 @@
 package pkg
 
+import "os"
+
 // much basic packinfo
 type Packinfo struct {
 	Packagename  string
@@ -14,6 +16,15 @@ type Packinfo struct {
 	Builddeps    []string
 	Conflicts    []string
 	Provides     []string
+}
+
+type Integrity struct {
+	ParentPkg string
+	Filepath  string
+	FileUid   uint64
+	FileGid   uint64
+	FileMode  os.FileMode
+	Blake3Sum string
 }
 
 type PackageV1 struct {
