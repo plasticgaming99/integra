@@ -1,10 +1,3 @@
-// artex package manager
-// integra (much unstable such wow)
-// goal: full dependency-based parallel
-//   package management
-// now:
-//   just simple package tool
-
 package main
 
 import (
@@ -14,5 +7,5 @@ import (
 )
 
 func main() {
-	cmd.Exec(os.Args)
+	cmd.Execute(os.Args[1:])
 }

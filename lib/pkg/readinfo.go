@@ -5,9 +5,11 @@ import (
 	"io"
 	"strconv"
 	"strings"
+
+	"github.com/plasticgaming99/integra/lib/pkg/types"
 )
 
-func ReadPackinfo(in io.Reader) (pkinfo Packinfo) {
+func ReadPackinfo(in io.Reader) (pkinfo types.Packinfo) {
 	scan := bufio.NewScanner(in)
 	// reuse for cut
 	var (
