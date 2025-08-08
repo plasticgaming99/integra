@@ -1,6 +1,7 @@
 /integra
 
 #buildintegra:
+/bintegra-test
 /source
 /package
 *.intg.tar.zst

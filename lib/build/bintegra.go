@@ -604,19 +604,20 @@ func envSetter(inst string) (name string, env string) {
 }
 
 func gitClone(repo string) {
-	repoName := strings.Split(repo, "/")
-	repoDir, err := os.Stat(repoName[len(repoName)-1])
+	repoSpl := strings.Split(repo, "/")
+	repoName := repoSpl[len(repoSpl)-1]
+	repoDir, err := os.Stat(repoName)
 	if err != nil {
 		if len(gitArgs) == 0 {
-			git.PlainClone(".", &git.CloneOptions{
+			git.PlainClone(repoName, &git.CloneOptions{
 				URL:      repo,
 				Progress: os.Stdout,
 			})
-			executecmd(gitExecutable, "clone", repo)
 		} else {
-			gitOpts := append([]string{"clone"}, repo)
-			gitOpts = append(gitOpts, gitArgs...)
-			executecmd(gitExecutable, gitOpts...)
+			git.PlainClone(repoName, &git.CloneOptions{
+				URL:      repo,
+				Progress: os.Stdout,
+			})
 		}
 	} else if repoDir.Mode().IsDir() {
 		os.Chdir(repoDir.Name())
