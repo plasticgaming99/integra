@@ -1,4 +1,7 @@
-integra
-artex
-root
+/integra
+
+#buildintegra:
+/source
+/package
 *.intg.tar.zst
+/INTGBUILD

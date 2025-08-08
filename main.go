@@ -3,7 +3,7 @@ package main
 import (
 	"os"
 
-	"github.com/plasticgaming99/integra/cmd"
+	cmd "github.com/plasticgaming99/integra/cmd/integra"
 )
 
 func main() {

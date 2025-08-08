@@ -21,6 +21,7 @@ type Generator struct {
 	strb strings.Builder
 }
 
+// not needed if you called NewGenerator
 func (g *Generator) Init() {
 	g.strb.Grow(102400)
 }

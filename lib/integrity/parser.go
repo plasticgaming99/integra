@@ -2,7 +2,6 @@ package integrity
 
 import (
 	"bufio"
-	"fmt"
 	"io"
 	"log"
 	"os"
@@ -47,7 +46,6 @@ func Parse(in io.Reader) (intg Integrity) {
 				}
 
 			}
-			fmt.Println("append", intgfile)
 			intg.Files = append(intg.Files, intgfile)
 		}
 	}
