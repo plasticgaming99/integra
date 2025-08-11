@@ -19,7 +19,6 @@ func Parse(in io.Reader) (intg Integrity) {
 		if text[0:1] == "/" {
 			// perhaps root dir
 			dirname = text
-			continue
 		} else {
 			// perhaps a file
 			f := strings.Fields(text)

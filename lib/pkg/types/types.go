@@ -1,5 +1,12 @@
 package types
 
+// minimum struct
+type Pkg struct {
+	PkgName string
+	Version string
+	Release int
+}
+
 // much basic packinfo
 type Packinfo struct {
 	Packagename  string
@@ -14,4 +21,12 @@ type Packinfo struct {
 	Builddeps    []string
 	Conflicts    []string
 	Provides     []string
+}
+
+func PackInfoToPkg(pkginfo Packinfo) Pkg {
+	return Pkg{
+		PkgName: pkginfo.Packagename,
+		Version: pkginfo.Version,
+		Release: pkginfo.Release,
+	}
 }

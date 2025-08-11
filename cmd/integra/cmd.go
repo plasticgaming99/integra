@@ -10,6 +10,7 @@ import (
 	"unicode"
 
 	"github.com/plasticgaming99/integra/lib/build"
+	"github.com/plasticgaming99/integra/lib/pkg/op"
 )
 
 type intgOpts struct {
@@ -148,7 +149,7 @@ func Execute(args []string) {
 		AllYes: false,
 
 		RootDir: "/",
-		DbDir:   "/var/lib/integra/db",
+		DbDir:   "/var/lib/integra/db", // relative path from rootdir
 
 		Quiet: false,
 		Debug: false,
@@ -168,5 +169,14 @@ func Execute(args []string) {
 			fmt.Println(err)
 		}
 		fmt.Println(string(j))
+	}
+
+	if intg.Install {
+		for _, s := range packs {
+			err := op.Install(s, intg.RootDir)
+			if err != nil {
+				log.Fatal(err)
+			}
+		}
 	}
 }
