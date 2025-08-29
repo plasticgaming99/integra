@@ -1,4 +1,4 @@
-// concurrent integrity
+// concurrent safe maybe
 package integrity
 
 import (
@@ -18,12 +18,14 @@ import (
 )
 
 type Generator struct {
-	strb strings.Builder
+	strb        strings.Builder
+	RootPermAll bool // set all file perm to root
 }
 
 // not needed if you called NewGenerator
 func (g *Generator) Init() {
 	g.strb.Grow(102400)
+	g.RootPermAll = false
 }
 
 func NewGenerator() Generator {
@@ -37,49 +39,86 @@ func (g *Generator) Generate(rootpath string) string {
 	filepath.WalkDir(rootpath, func(path string, d fs.DirEntry, err error) error {
 		var errf error
 		var inf os.FileInfo
-		inf, errf = os.Stat(path)
+		inf, errf = os.Lstat(path)
 		if errf != nil {
-			log.Fatal("error opening file")
+			log.Fatal("error opening file: ", errf)
 		}
 		stat := inf.Sys().(*syscall.Stat_t)
 
 		if d.Type().IsDir() {
 			s, errf := filepath.Rel(rootpath, path)
 			if errf != nil {
-				log.Fatal("error processing path", errf)
+				log.Fatal("error processing path: ", errf)
 			}
 			g.strb.WriteString("/")
 			if s != "." {
 				g.strb.WriteString(s)
 			}
-			g.strb.WriteString("\n")
-		} else if d.Type().Perm().IsRegular() {
-			file, errf := os.Open(path)
-			if errf != nil {
-				log.Fatal("error opening file")
+			g.strb.WriteString(" /")
+			g.strb.WriteString("dir ")
+			if g.RootPermAll {
+				g.strb.WriteString("uid=0 gid=0")
+			} else {
+				g.strb.WriteString("uid=")
+				g.strb.WriteString(fmt.Sprint(stat.Uid))
+				g.strb.WriteString(" ")
+				g.strb.WriteString("gid=")
+				g.strb.WriteString(fmt.Sprint(stat.Gid))
 			}
-			h := blake3.New()
-			bufFile := bufio.NewReader(file)
-			_, errf = io.Copy(h, bufFile)
-			if errf != nil {
-				log.Fatal("error:", errf)
-			}
-			sum := h.Sum(nil)
-			file.Close()
-
-			g.strb.WriteString(d.Name())
-			g.strb.WriteString(" ")
-			g.strb.WriteString("uid=")
-			g.strb.WriteString(fmt.Sprint(stat.Uid))
-			g.strb.WriteString(" ")
-			g.strb.WriteString("gid=")
-			g.strb.WriteString(fmt.Sprint(stat.Gid))
 			g.strb.WriteString(" ")
 			g.strb.WriteString("perm=")
 			g.strb.WriteString(strconv.FormatUint(uint64(inf.Mode().Perm()), 8))
+			g.strb.WriteString("\n")
+		} else if d.Type().Perm().IsRegular() {
+			file, errf := os.Open(path)
+			sum := []byte{}
+			linksto := ""
+			if errf != nil {
+				p, er := os.Readlink(path)
+				if er != nil {
+					fmt.Println("error reading link: ", er)
+					fmt.Println("error opening file: ", errf)
+				} else {
+					linksto = p
+				}
+			} else {
+				h := blake3.New()
+				bufFile := bufio.NewReader(file)
+				_, errf = io.Copy(h, bufFile)
+				if errf != nil {
+					log.Fatal("error:", errf)
+				}
+				sum = h.Sum(nil)
+			}
+			file.Close()
+
+			g.strb.WriteString(d.Name())
+			g.strb.WriteString(" /")
+			// sum
+			if len(sum) == 0 {
+				g.strb.WriteString("sym ")
+			}
+			if g.RootPermAll {
+				g.strb.WriteString("uid=0 gid=0")
+			} else {
+				g.strb.WriteString("uid=")
+				g.strb.WriteString(fmt.Sprint(stat.Uid))
+				g.strb.WriteString(" ")
+				g.strb.WriteString("gid=")
+				g.strb.WriteString(fmt.Sprint(stat.Gid))
+			}
 			g.strb.WriteString(" ")
-			g.strb.WriteString("blake3sum=")
-			g.strb.WriteString(hex.EncodeToString(sum[:]))
+			g.strb.WriteString("perm=")
+			g.strb.WriteString(strconv.FormatUint(uint64(inf.Mode().Perm()), 8))
+			if len(sum) != 0 {
+				g.strb.WriteString(" ")
+				g.strb.WriteString("blake3sum=")
+				g.strb.WriteString(hex.EncodeToString(sum[:]))
+			} else {
+				g.strb.WriteString(" ")
+				g.strb.WriteString("linksto=")
+				g.strb.WriteString(linksto)
+			}
 			g.strb.WriteString("\n")
 		}
 		return errf

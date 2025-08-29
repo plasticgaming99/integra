@@ -53,14 +53,13 @@ var (
 
 	additionalStats = []string{"prepare", "test"}
 	cmdRunnableStat = []string{"prepare", "build", "package", "test"}
+
+	rootOverride = false
+
+	lto = true
 )
 
 const intgBufSiz = 256
-
-// build(integra) options
-var (
-	lto = true
-)
 
 var intb = "= INTB =>"
 
@@ -78,6 +77,9 @@ func BuildIntegra(args []string) {
 	if slices.Contains(args, "PackageWithFakeroot") {
 		fakerootnow = true
 		fakerootToPackage = args[1]
+	}
+	if slices.Contains(args, "RootOverride") {
+		rootOverride = true
 	}
 
 	if cf := os.Getenv("BINTG_CONFIGFILE"); cf != "" {
@@ -476,6 +478,11 @@ func runWithFakeroot(cmdname string, args ...string) {
 	toexec.Stderr = os.Stderr
 	toexec.Env = os.Environ()
 	toexec.Run()
+	if toexec.ProcessState.ExitCode() == -1 {
+		fmt.Println(intb, "Falling back to os fakeroot, with root perm overriding")
+		args = append(args, "RootOverride")
+		executecmd("fakeroot", append([]string{cmdname}, args...)...)
+	}
 }
 
 func executeCmdEnvErr(cmdname string, argv []string, envir []string) error {
@@ -504,6 +511,7 @@ func startpack(intgroot string, packagename string, dirpersubpkg bool) {
 
 	fmt.Println(intb, "Generating .INTEGRITY...")
 	g := integrity.NewGenerator()
+	g.RootPermAll = rootOverride
 	os.WriteFile(pkgdir+"/.INTEGRITY", []byte(g.Generate(pkgdir)), 0644)
 
 	fmt.Println(intb, "Creating main archive with bsdtar...")
@@ -606,6 +614,10 @@ func envSetter(inst string) (name string, env string) {
 func gitClone(repo string) {
 	repoSpl := strings.Split(repo, "/")
 	repoName := repoSpl[len(repoSpl)-1]
+	bef, ok := strings.CutSuffix(repoName, ".git")
+	if ok {
+		repoName = bef
+	}
 	repoDir, err := os.Stat(repoName)
 	if err != nil {
 		if len(gitArgs) == 0 {

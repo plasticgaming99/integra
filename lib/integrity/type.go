@@ -4,6 +4,7 @@ import "os"
 
 type IntgFile struct {
 	Filepath  string
+	FileType  int
 	FileUid   uint64
 	FileGid   uint64
 	FileMode  os.FileMode

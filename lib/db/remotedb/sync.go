@@ -1,4 +1,4 @@
-package util
+package remotedb
 
 import (
 	"errors"

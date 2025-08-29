@@ -136,7 +136,6 @@ func parseArgs(intg *intgOpts, packs *[]string, args []string) error {
 }
 
 func Execute(args []string) {
-	fmt.Println("integra")
 	intg := &intgOpts{
 		Install: false,
 		Sync:    false,
