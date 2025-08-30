@@ -7,7 +7,6 @@ import (
 
 	"github.com/mholt/archives"
 	"github.com/plasticgaming99/integra/lib/integrity"
-	"github.com/plasticgaming99/integra/lib/pkg"
 	"github.com/plasticgaming99/integra/lib/pkg/types"
 )
 
@@ -25,7 +24,7 @@ func GetPackinfo(path string) (types.Packinfo, error) {
 	if err != nil {
 		return types.Packinfo{}, fmt.Errorf("failed to open .PACKAGE in archive %s: %w", path, err)
 	}
-	i := pkg.ReadPackinfo(f)
+	i := types.ReadPackinfo(f)
 	f.Close()
 	return i, nil
 }

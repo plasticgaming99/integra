@@ -8,10 +8,14 @@ import (
 	"path/filepath"
 
 	"github.com/mholt/archives"
+	"github.com/plasticgaming99/integra/lib/db/localdb"
+	"github.com/plasticgaming99/integra/lib/pkg/types"
 )
 
 type handleArchive struct {
+	pkg     types.Pkg
 	rootDir string
+	localdb *localdb.LocalDB
 }
 
 func (h *handleArchive) fileHandler(ctx context.Context, f archives.FileInfo) error {
@@ -39,7 +43,7 @@ func (h *handleArchive) fileHandler(ctx context.Context, f archives.FileInfo) er
 	defer reader.Close()
 
 	if f.Name() == ".PACKAGE" || f.Name() == ".INTEGRITY" || f.Name() == ".MTREE" {
-		//localDB.AddFile(pkinfo.Packagename, f.Name(), reader)
+		h.localdb.AddFile(h.pkg, f.Name(), bufread)
 		return nil
 	}
 
@@ -58,15 +62,30 @@ func (h *handleArchive) fileHandler(ctx context.Context, f archives.FileInfo) er
 }
 
 // install installs package
-func Install(filepath string, rootdir string) error {
+func Install(filepath string, rootdir string, localdb localdb.LocalDB) error {
 	file, err := os.Open(filepath)
 	if err != nil {
 		return err
 	}
+	defer file.Close()
+	afs := archives.ArchiveFS{
+		Path:   filepath,
+		Format: archives.Tar{},
+	}
+	pkinfofile, err := afs.Open(".PACKAGE")
+	if err != nil {
+		return err
+	}
+	defer pkinfofile.Close()
+	pkinfofilebuf := bufio.NewReader(pkinfofile)
+	pkinfo := types.ReadPackinfo(pkinfofilebuf)
+
 	buffile := bufio.NewReader(file)
 	tzst := archives.Tar{}
 	fh := handleArchive{
+		pkg:     types.PackInfoToPkg(pkinfo),
 		rootDir: rootdir,
+		localdb: &localdb,
 	}
 	tzst.Extract(context.TODO(), buffile, fh.fileHandler)
 	return nil

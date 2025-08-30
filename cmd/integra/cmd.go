@@ -10,6 +10,7 @@ import (
 	"unicode"
 
 	"github.com/plasticgaming99/integra/lib/build"
+	"github.com/plasticgaming99/integra/lib/db/localdb"
 	"github.com/plasticgaming99/integra/lib/pkg/op"
 )
 
@@ -170,9 +171,17 @@ func Execute(args []string) {
 		fmt.Println(string(j))
 	}
 
+	// localdb will be require one per integra instance
+	ldb, err := localdb.OpenDB(intg.DbDir)
+	if err != nil {
+		fmt.Println("opening db failed, initializing db anyway")
+		localdb.InitializeDB(intg.DbDir)
+		fmt.Println("initializing complete, please restart")
+	}
+
 	if intg.Install {
 		for _, s := range packs {
-			err := op.Install(s, intg.RootDir)
+			err := op.Install(s, intg.RootDir, ldb)
 			if err != nil {
 				log.Fatal(err)
 			}

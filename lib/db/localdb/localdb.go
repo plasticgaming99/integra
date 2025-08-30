@@ -17,13 +17,18 @@ type LocalDB struct {
 	root os.Root
 }
 
-func (ldb *LocalDB) OpenDB(path string) error {
+func InitializeDB(path string) error {
+	return os.MkdirAll(path, 0755)
+}
+
+func OpenDB(path string) (LocalDB, error) {
+	ldb := LocalDB{}
 	root, err := os.OpenRoot(path)
 	if err != nil {
-		return fmt.Errorf("error opening db: %w", err)
+		return LocalDB{}, fmt.Errorf("error opening db: %w", err)
 	}
 	ldb.root = *root
-	return nil
+	return ldb, nil
 }
 
 func GetPkgDirname(pkg types.Pkg) string {
