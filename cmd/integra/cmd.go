@@ -6,12 +6,14 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"path/filepath"
 	"strings"
 	"unicode"
 
 	"github.com/plasticgaming99/integra/lib/build"
 	"github.com/plasticgaming99/integra/lib/db/localdb"
 	"github.com/plasticgaming99/integra/lib/pkg/op"
+	"github.com/plasticgaming99/integra/lib/pkg/types"
 )
 
 type intgOpts struct {
@@ -29,6 +31,10 @@ type intgOpts struct {
 
 	Quiet bool `json:"quiet"`
 	Debug bool `json:"debug"`
+}
+
+func (intgop *intgOpts) GetDBDir() string {
+	return filepath.Join(intgop.RootDir, intgop.DbDir)
 }
 
 func upperAvailable(st string) bool {
@@ -149,7 +155,7 @@ func Execute(args []string) {
 		AllYes: false,
 
 		RootDir: "/",
-		DbDir:   "/var/lib/integra/db", // relative path from rootdir
+		DbDir:   "var/lib/integra/db", // relative path from rootdir
 
 		Quiet: false,
 		Debug: false,
@@ -172,11 +178,13 @@ func Execute(args []string) {
 	}
 
 	// localdb will be require one per integra instance
-	ldb, err := localdb.OpenDB(intg.DbDir)
+	ldb, err := localdb.OpenLocalDB(intg.GetDBDir())
 	if err != nil {
 		fmt.Println("opening db failed, initializing db anyway")
-		localdb.InitializeDB(intg.DbDir)
+		fmt.Println(localdb.InitializeDBDir(intg.GetDBDir()))
+		fmt.Println(localdb.InitializeLocalDB(intg.GetDBDir()))
 		fmt.Println("initializing complete, please restart")
+		return
 	}
 
 	if intg.Install {
@@ -185,6 +193,10 @@ func Execute(args []string) {
 			if err != nil {
 				log.Fatal(err)
 			}
+		}
+	} else if intg.Remove {
+		for _, s := range packs {
+			op.Remove(ldb.GetKeyPkgFuzzy(types.Pkg{PkgName: s}), intg.RootDir, ldb)
 		}
 	}
 }

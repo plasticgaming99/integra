@@ -61,8 +61,8 @@ func (h *handleArchive) fileHandler(ctx context.Context, f archives.FileInfo) er
 	return nil
 }
 
-// install installs package
-func Install(filepath string, rootdir string, localdb localdb.LocalDB) error {
+// install installs package, do not care about dependency
+func Install(filepath string, rootdir string, ldb localdb.LocalDB) error {
 	file, err := os.Open(filepath)
 	if err != nil {
 		return err
@@ -85,7 +85,7 @@ func Install(filepath string, rootdir string, localdb localdb.LocalDB) error {
 	fh := handleArchive{
 		pkg:     types.PackInfoToPkg(pkinfo),
 		rootDir: rootdir,
-		localdb: &localdb,
+		localdb: &ldb,
 	}
 	tzst.Extract(context.TODO(), buffile, fh.fileHandler)
 	return nil
