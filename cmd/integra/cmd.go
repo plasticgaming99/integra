@@ -196,7 +196,7 @@ func Execute(args []string) {
 		}
 	} else if intg.Remove {
 		for _, s := range packs {
-			op.Remove(ldb.GetKeyPkgFuzzy(types.Pkg{PkgName: s}), intg.RootDir, ldb)
+			fmt.Println(op.Remove(ldb.GetKeyPkgFuzzy(types.Pkg{PkgName: s}), intg.RootDir, ldb))
 		}
 	}
 }

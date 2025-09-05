@@ -3,6 +3,7 @@ package op
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 
 	"github.com/plasticgaming99/integra/lib/db/localdb"
 	"github.com/plasticgaming99/integra/lib/integrity"
@@ -17,7 +18,10 @@ func Remove(pkg types.Pkg, rootdir string, ldb localdb.LocalDB) error {
 	}
 	intg := integrity.Parse(rd)
 	for _, intg := range intg.Files {
-		os.Remove(intg.Filepath)
+		if intg.Filepath == "/.PACKAGE" {
+			continue
+		}
+		os.Remove(filepath.Join(rootdir, intg.Filepath))
 	}
 	ldb.UnregisterPkg(pkg)
 	return nil
