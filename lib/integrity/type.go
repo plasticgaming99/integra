@@ -8,6 +8,7 @@ type IntgFile struct {
 	FileUid   uint64
 	FileGid   uint64
 	FileMode  os.FileMode
+	LinksTo   string
 	Blake3Sum string
 }
 

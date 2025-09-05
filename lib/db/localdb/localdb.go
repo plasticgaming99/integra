@@ -121,7 +121,7 @@ func (ldb *LocalDB) GetKeyPkgFuzzy(pkg types.Pkg) types.Pkg {
 }
 
 // returns reader from file
-func (ldb *LocalDB) GetFile(pkg types.Pkg, fname string) (rd io.Reader, er error) {
+func (ldb *LocalDB) GetFile(pkg types.Pkg, fname string) (rd io.ReadCloser, er error) {
 	return ldb.root.Open(getFileName(pkg, fname))
 }
 

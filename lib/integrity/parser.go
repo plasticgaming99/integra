@@ -66,6 +66,8 @@ func Parse(in io.Reader) (intg Integrity) {
 				intgfile.FileUid = 0 //currently
 			case "gid":
 				intgfile.FileGid = 0 //currently
+			case "linksto":
+				intgfile.LinksTo = aft
 			case "blake3sum":
 				intgfile.Blake3Sum = aft
 			}

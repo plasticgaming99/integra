@@ -165,7 +165,8 @@ func Execute(args []string) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	if !(intg.Install || intg.Sync || intg.Upgrade || intg.Remove || intg.Search) {
+	if !(intg.Install || intg.Sync || intg.Upgrade || intg.Remove ||
+		intg.Search || intg.Query || intg.Check) {
 		CommandHelp(os.Stdout)
 	}
 	if intg.Debug {
@@ -197,6 +198,17 @@ func Execute(args []string) {
 	} else if intg.Remove {
 		for _, s := range packs {
 			fmt.Println(op.Remove(ldb.GetKeyPkgFuzzy(types.Pkg{PkgName: s}), intg.RootDir, ldb))
+		}
+	} else if intg.Check {
+		for _, s := range packs {
+			pack := ldb.GetKeyPkgFuzzy(types.Pkg{PkgName: s})
+			ok, err := op.Check(pack, intg.RootDir, ldb)
+			if err != nil {
+				fmt.Println("error found while checking integrity:", err)
+			}
+			if ok {
+				fmt.Println("Integrity check of Package", localdb.PkgToDirname(pack), "Success")
+			}
 		}
 	}
 }
